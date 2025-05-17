@@ -13,4 +13,9 @@ class CustomerProductRecurringMonthly extends Model
         'customer_product_id',
         'day',
     ];
+
+    public function customerProduct()
+    {
+        return $this->belongsTo(CustomerProduct::class);
+    }
 }

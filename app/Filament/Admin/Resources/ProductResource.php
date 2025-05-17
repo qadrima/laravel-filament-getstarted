@@ -50,9 +50,24 @@ class ProductResource extends Resource
     {
         return $form
             ->schema([
-                TextInput::make('name')->required(),
-                TextInput::make('price')->numeric()->required(),
-                Textarea::make('description'),
+                Forms\Components\Grid::make([
+                    'default' => 1,
+                    'md' => 2,      
+                ])
+                ->schema([
+                    
+                    TextInput::make('name')
+                        ->required()
+                        ->maxLength(255),
+
+                    TextInput::make('price')
+                        ->numeric()
+                        ->required(),
+                        
+                    Textarea::make('description')
+                        ->columnSpanFull()
+
+                ])
             ]);
     }
 

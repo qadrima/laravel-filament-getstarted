@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\CustomerResource\Pages;
 use App\Filament\Admin\Resources\CustomerResource\RelationManagers;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Rules\UniqueRecurringDays;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -70,7 +71,13 @@ class CustomerResource extends Resource
 
                     TextInput::make('phone')
                         ->required()
-                        ->label('Phone Number'),
+                        ->label('Phone Number')
+                        ->rules([
+                            'regex:/^62[0-9]{9,13}$/'
+                        ])
+                        ->validationMessages([
+                            'regex' => 'The phone number must start with 62 and contain only digits.',
+                        ]),
 
                     Textarea::make('description')
                         ->columnSpanFull()
@@ -81,8 +88,7 @@ class CustomerResource extends Resource
                     ->relationship()
                     ->label('Products Purchased')
                     ->schema([
-
-                        // Product Selection
+                        # Product Selection
                         Select::make('product_id')
                             ->label('Product')
                             ->options(function () {
@@ -100,7 +106,7 @@ class CustomerResource extends Resource
                                 }
                             }),
                         
-                        // Product Name
+                        # Product Name
                         Select::make('type')
                             ->label('Schedule Type')
                             ->options([
@@ -120,8 +126,8 @@ class CustomerResource extends Resource
                                 $set('specific_date', null);
                             }),
 
-                        // Conditional fields based on the selected type
-                        // Specific Dates
+                        # Conditional fields based on the selected type
+                        # Specific Dates
                         DatePicker::make('specific_date')
                             ->label('Pick a Date')
                             ->minDate(Carbon::today())
@@ -130,7 +136,7 @@ class CustomerResource extends Resource
                             ->placeholder('Select a date')
                             ->visible(fn ($get) => $get('type') === 'specific'),
 
-                        // Recurring type
+                        # Recurring type
                         Select::make('recurring_type')
                             ->label('Recurring Type')
                             ->options([
@@ -157,9 +163,14 @@ class CustomerResource extends Resource
 
                             }),
                         
-                        // Recurring if weekly
+                        # Recurring if weekly
                         Repeater::make('recurringWeekly')
                             ->relationship('recurringWeekly')
+                            ->columnSpanFull()
+                            ->grid([
+                                'default' => 1,
+                                'md' => 3,
+                            ])
                             ->schema([
                                 Select::make('day')
                                     ->label('Day of Week')
@@ -173,46 +184,26 @@ class CustomerResource extends Resource
                                         'sunday' => 'Sunday',
                                     ])
                                     ->required()
-                                    ->rules([
-                                        function ($attribute, $value, $fail) {
-
-                                            $data = request()->input('data.recurringWeekly', []);
-                                            $duplicates = collect($data)
-                                                ->pluck('day')
-                                                ->filter()
-                                                ->duplicates();
-
-                                            if ($duplicates->isNotEmpty()) {
-                                                $fail('Invalid day of the week selected.');
-                                            }
-                                        }
-                                    ]),
                             ])
+                            ->rules([new UniqueRecurringDays()])
                             ->hidden(fn ($get) => $get('recurring_type') !== 'weekly'),
 
-                        // Recurring if monthly
+                        # Recurring if monthly
                         Repeater::make('recurringMonthly')
                             ->relationship('recurringMonthly')
+                            ->columnSpanFull()
+                            ->grid([
+                                'default' => 1,
+                                'md' => 3,
+                            ])
                             ->schema([
                                 Select::make('day')
                                     ->label('Day of Month')
                                     ->options(array_combine(range(1, 28), range(1, 28)))
                                     ->required()
-                                    ->rules([
-                                        function ($attribute, $value, $fail) {
-
-                                            $data = request()->input('data.recurringMonthly', []);
-                                            $duplicates = collect($data)
-                                                ->pluck('day')
-                                                ->filter()
-                                                ->duplicates();
-
-                                            if ($duplicates->isNotEmpty()) {
-                                                $fail('Invalid day of the month selected.');
-                                            }
-                                        }
-                                    ]),
                             ])
+                            ->rules([new UniqueRecurringDays()])
+                            // ->reorderable()
                             ->hidden(fn ($get) => $get('recurring_type') !== 'monthly'),
 
                     ])
